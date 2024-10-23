@@ -34,13 +34,8 @@ def invoke_dev_center_qna(query, history="{}"):
     if DEBUG:
         print("sql_query_creation response: {}\n\n".format(response))
 
-    st.session_state.related = response.related_queries
-    st.session_state.history = response.conversation_history
-    return message, code_sample, citations
+    return message, code_sample, citations, response.related_queries, response.conversation_history
 
 
-def invoke_conva_capabilities(query, pb, history="{}"):
-    pb.progress(30, "Generating answer...")
-    message, code_sample, citations = invoke_dev_center_qna(query, history)
-    pb.progress(100, "Done")
-    return message, code_sample, citations
+def invoke_conva_capabilities(query, history="{}"):
+    return invoke_dev_center_qna(query, history)

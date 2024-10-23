@@ -1,7 +1,23 @@
 import json
 import os
+import random
 import streamlit as st
+import threading
+import time
 from conva import invoke_conva_capabilities
+
+
+task_complete = threading.Event()
+
+PROGRESS_MESSAGES = [
+    "Understanding the query...",
+    "Fetching pages from the cybersource website...",
+    "Analyzing the pages...",
+    "Checking for code samples...",
+    "Collating information for the final response...",
+    "Generating the citations...",
+    "Generating the final answer...",
+]
 
 
 # Initialize session state variables
@@ -53,14 +69,12 @@ def load_custom_css():
 
 
 # Get response from the bot
-def get_bot_response(user_input, pb):
+def get_bot_response(user_input, history):
     try:
-        pb.progress(100, "Done")
-        message, code_sample, sources = invoke_conva_capabilities(user_input, pb, st.session_state.history)
-        return message, code_sample, sources
-    except Exception as e:
-        st.error(f"Error getting response: {str(e)}")
-        return "Sorry, there was an error processing your request.", None, None
+        message, code_sample, sources, related, history = invoke_conva_capabilities(user_input, history)
+        return message, code_sample, sources, related, history
+    except (Exception,) as e:
+        return "Sorry, there was an error processing your request ({}).".format(e), None, None, [], "{}"
 
 
 # Handle related query button click
@@ -89,6 +103,30 @@ def show_related_queries():
                 )
 
 
+def simulate_progress_update(pb):
+    progress = 0
+    index = 0
+    while not task_complete.is_set():
+        # Simulate progress updates
+        time.sleep(random.randint(3, 5))
+        progress += 15
+        index += 1
+        progress = min(progress, 90)
+        index = min(index, len(PROGRESS_MESSAGES) - 1)
+        pb.progress(progress, PROGRESS_MESSAGES[index])
+    pb.progress(100, "Done")
+
+
+def process_bot_response_bg(prompt, results, history):
+    message, code_sample, sources, related, history = get_bot_response(prompt, history)
+    results["message"] = message
+    results["code_sample"] = code_sample
+    results["sources"] = sources
+    results["related"] = related
+    results["history"] = history
+    task_complete.set()
+
+
 # Process and display chat messages
 def process_query(prompt):
     # Display user message
@@ -102,7 +140,17 @@ def process_query(prompt):
         _, col1, _ = placeholder.columns([1, 3, 1])
         pb = col1.progress(0, "Understanding your query...")
 
-        message, code_sample, sources = get_bot_response(prompt, pb)
+        results = {}
+        threading.Thread(target=process_bot_response_bg, args=(prompt, results, st.session_state.history)).start()
+        simulate_progress_update(pb)
+        task_complete.wait()
+
+        # message, code_sample, sources, related, history = get_bot_response(prompt, pb)
+        message = results.get("message", "")
+        code_sample = results.get("code_sample", "")
+        sources = results.get("sources", [])
+        st.session_state.related = results.get("related", [])
+        st.session_state.history = results.get("history", "{}")
 
         placeholder.empty()
 
