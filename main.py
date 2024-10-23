@@ -71,8 +71,7 @@ def load_custom_css():
 # Get response from the bot
 def get_bot_response(user_input, history):
     try:
-        message, code_sample, sources, related, history = invoke_conva_capabilities(user_input, history)
-        return message, code_sample, sources, related, history
+        return invoke_conva_capabilities(user_input, history)
     except (Exception,) as e:
         return "Sorry, there was an error processing your request ({}).".format(e), None, None, [], "{}"
 
@@ -118,8 +117,9 @@ def simulate_progress_update(pb):
 
 
 def process_bot_response_bg(prompt, results, history):
-    message, code_sample, sources, related, history = get_bot_response(prompt, history)
+    message, answer, code_sample, sources, related, history = get_bot_response(prompt, history)
     results["message"] = message
+    results["answer"] = answer
     results["code_sample"] = code_sample
     results["sources"] = sources
     results["related"] = related
@@ -147,6 +147,7 @@ def process_query(prompt):
 
         # message, code_sample, sources, related, history = get_bot_response(prompt, pb)
         message = results.get("message", "")
+        answer = results.get("answer", "")
         code_sample = results.get("code_sample", "")
         sources = results.get("sources", [])
         st.session_state.related = results.get("related", [])
@@ -154,10 +155,12 @@ def process_query(prompt):
 
         placeholder.empty()
 
-        if not message:
-            message = "Sorry, I couldn't find any information on that."
+        if not answer:
+            answer = message
+            if not answer:
+                answer = "Sorry, I couldn't find any information on that."
 
-        st.markdown(message)
+        st.markdown(answer)
 
         if code_sample:
             with st.expander("Code Sample"):
@@ -174,7 +177,7 @@ def process_query(prompt):
         st.session_state.messages.append(
             {
                 "role": "assistant",
-                "message": message,
+                "message": answer,
                 "code_sample": code_sample,
                 "sources": sources,
             }

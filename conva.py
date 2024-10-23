@@ -13,7 +13,9 @@ client = ConvaAI(
 def invoke_dev_center_qna(query, history="{}"):
     response = client.invoke_capability(query=query, history=history, stream=False, timeout=600)
 
-    message = response.parameters.get("detailed_answer_in_markdown", "")
+    message = response.message
+
+    answer = response.parameters.get("detailed_answer_in_markdown", "")
 
     code_sample = ""
     if "code_sample" in response.parameters:
@@ -34,7 +36,7 @@ def invoke_dev_center_qna(query, history="{}"):
     if DEBUG:
         print("sql_query_creation response: {}\n\n".format(response))
 
-    return message, code_sample, citations, response.related_queries, response.conversation_history
+    return message, answer, code_sample, citations, response.related_queries, response.conversation_history
 
 
 def invoke_conva_capabilities(query, history="{}"):
