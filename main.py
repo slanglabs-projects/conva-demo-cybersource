@@ -14,7 +14,6 @@ PROGRESS_MESSAGES = [
     "Fetching pages from the cybersource website...",
     "Analyzing the pages...",
     "Checking for code samples...",
-    "Collating information for the final response...",
     "Generating the citations...",
     "Generating the final answer...",
 ]
@@ -103,7 +102,7 @@ def show_related_queries():
 
 
 def simulate_progress_update(pb):
-    progress = 0
+    progress = 15
     index = 0
     while not task_complete.is_set():
         # Simulate progress updates
@@ -138,7 +137,7 @@ def process_query(prompt):
     with st.chat_message("assistant"):
         placeholder = st.empty()
         _, col1, _ = placeholder.columns([1, 3, 1])
-        pb = col1.progress(0, "Understanding your query...")
+        pb = col1.progress(15, "Understanding the query...")
 
         results = {}
         threading.Thread(target=process_bot_response_bg, args=(prompt, results, st.session_state.history)).start()

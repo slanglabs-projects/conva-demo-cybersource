@@ -1,7 +1,7 @@
 import streamlit as st
 from conva_ai import ConvaAI
 
-DEBUG = True
+DEBUG = False
 
 client = ConvaAI(
     assistant_id=st.secrets.conva_assistant_id,
